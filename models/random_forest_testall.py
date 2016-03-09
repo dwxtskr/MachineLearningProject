@@ -1,4 +1,4 @@
- #
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -31,79 +31,79 @@ import time
 from sklearn.metrics import f1_score, classification_report
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.decomposition import PCA
-import csv
+import sys
 import os
 import pandas as pd
 #np.set_printoptions(edgeitems=30)
 
-
-def load_data(file_path,params):
+params = dict(
+    #path = os.path.join(os.path.expanduser('~'), 'RA', 'MachineLearningProject', 'data','smallBinaryPrice','0','*'), 
+    n_row = 10000,
+    frac_train = 0.75, # fraction of dataset used for train. 1 - frac_train is used for test.
+    n_symbol = 1,
+    feature_reduction = 0, # No. features after PCA. Change this value to an int value to conduct PCA on feature set.
+    n_estimator = 100, # No. estimators for RandomForestClassifier
+    criterion = 'entropy'
+)
+def trans_mean_std_save(p,filename):
+    p=p.transpose()
+    p['Mean']=p.mean(axis =1)
+    p['Standard Deviation']=p.std(axis =1)
+    p.to_csv(os.path.join(os.path.expanduser('~'), 'RA','MachineLearningProject', 'data', 'score',filename+'.csv'))
+    
+def load_data(file):
     '''
     Preprocess current dataset, which is split into several files in .bin format.
-
     :param file_path: path to the dataset
     :return:
     '''
 
     #get paths to all files in 'file_path'
-    print(file_path)
-    files = []
-    for file in glob.glob(file_path):
-        files.append(file)
-        print(file)
-    files.sort()
+
 
     #dataframe for appending labels and features from all .bin files
     #pandas is used because numpy ndarrays need to be initialized to their final size.
     dfLabel = pd.DataFrame(dtype="float64")
     dfFeature = pd.DataFrame(dtype="float64")
-
-    for file in files:
+    
         #The first two entries of the .bin file are number of rows and number of columns, respectively
-        binary = np.fromfile(file, dtype='float64')
-        numRow = binary[0]
-
-        numCol= binary[1]
-        binary = np.delete(binary, [0, 1])
-        binary = binary.reshape((numRow, numCol))
+    binary = np.fromfile(file, dtype='float64')
+    numRow = binary[0]
+    numCol= binary[1]
+    binary = np.delete(binary, [0, 1])
+    binary = binary.reshape((numRow, numCol))
 
         #concatenate all label and features
-        tempLabel = pd.DataFrame(binary[:,0])
-        tempFeature = pd.DataFrame(binary[:,1:])
-        dfLabel = pd.concat([dfLabel, tempLabel], axis=1)
-        dfFeature = pd.concat([dfFeature, tempFeature], axis=1)
-        
+    tempLabel = pd.DataFrame(binary[:,0])
+    tempFeature = pd.DataFrame(binary[:,1:])
+    dfLabel = pd.concat([dfLabel, tempLabel], axis=1)
+    dfFeature = pd.concat([dfFeature, tempFeature], axis=1)
 
         #reduce number of rows to match params['n_row']
-        dfLabel = dfLabel.tail(params['n_row'])
-        dfFeature = dfFeature.tail(params['n_row'])
-        y = dfLabel.as_matrix()
-        x = dfFeature.as_matrix()
+    dfLabel = dfLabel.tail(params['n_row'])
+    dfFeature = dfFeature.tail(params['n_row'])
+    y = dfLabel.as_matrix()
+    x = dfFeature.as_matrix()
     
     print("DIMENSIONS")
     print("x", x.shape)
     print("y", y.shape)
     return x, y
 
-def train_test_split(x, y, i,params):
+def train_test_split(x, y):
     '''
     split x and y into x_train, x_test, y_train, y_test
-
     :param x: numpy ndarray
     :param y: numpy ndarray
     :return: x_train, x_test, y_train, y_test
     '''
-    
-    startindex=params['increment']*i
-    splitIndex=params['increment']*i+math.floor(params['frac_train']*params['n_row'])
-    endindex = splitIndex+math.floor(params['frac_test']*params['n_row'])
-    print splitIndex
-    print endindex 
-    y_test = y[splitIndex:endindex]
-    y_train = y[startindex:splitIndex]
-    x_test = x[splitIndex:endindex]
-    x_train = x[startindex:splitIndex]
-    
+
+    splitIndex=math.floor(params['frac_train']*params['n_row'])
+    y_test = y[splitIndex:]
+    y_train = y[:splitIndex]
+    x_test = x[splitIndex:]
+    x_train = x[:splitIndex]
+
     print("DIMENSIONS")
     print("x_test", x_test.shape)
     print("x_train", x_train.shape)
@@ -117,15 +117,13 @@ def pca(x):
     :param x: numpy ndarray
     :return: transformed x. numpy ndarray
     '''
-    #pca = PCA(n_components=params['feature_reduction'])
-    pca = PCA()
+    pca = PCA(n_components=params['feature_reduction'])
     x = pca.fit_transform(x)
 
     return x
 
-def random_forest(x_train, x_test, y_train, y_test, params):
+def random_forest(x_train, x_test, y_train, y_test):
     '''
-
     :param x_train: numpy ndarray
     :param x_test: numpy ndarray
     :param y_train: numpy ndarray
@@ -183,35 +181,33 @@ def classification_error(y_test, y_pred):
     print("correct/total",float(correct) / total)
     return pd.DataFrame({"correct": [correct],"total": [total],'correct/total':[float(correct) / total]})
 
-def process_machine_learning(symbol, i, params):
-    x,y = load_data(params['path'],params)
-    if params['feature_reduction']:
-        x = pca(x)
-    x_train, x_test, y_train, y_test = train_test_split(x, y, i,params)
-    print x_test[:50,0]
-    print y_test[:50,0]
-    y_pred = random_forest(x_train, x_test, y_train, y_test,params)
-    return pd.DataFrame({'y_test':y_test[:,0],'y_pred':y_pred})
-    #signal_pd.to_csv(os.path.join('..', 'data', 'random_forest',symbol,symbol+'_'+str(i)+'.csv'),header = False)
 
-    
 if __name__ == "__main__":
-    symbol = 'AD'
+    params['path']= path = os.path.join(os.path.expanduser('~'), 'RA', 'MachineLearningProject', 'data','smallBinaryPrice','*')
+    f1_score1_pd=pd.DataFrame()
+    f1_score2_pd=pd.DataFrame()
+    ClassReport_pd=pd.DataFrame()
+    for file in glob.glob(params['path']):
+        print(file)
+        symbol =file[-25:-23]
+        x,y = load_data(file)
+        if params['feature_reduction']:
+            x = pca(x)
+        x_train, x_test, y_train, y_test = train_test_split(x, y)
+        y_pred = random_forest(x_train, x_test, y_train, y_test)
+        score1, score2=print_f1_score(y_test, y_pred)
+        class_error = classification_error(y_test, y_pred) 
+        score1.index=[symbol]
+        score2.index=[symbol]
+        class_error.index=[symbol]
+        f1_score1_pd=f1_score1_pd.append(score1)
+        f1_score2_pd=f1_score2_pd.append(score2)
+        ClassReport_pd=ClassReport_pd.append(class_error)
+        
+    trans_mean_std_save(f1_score1_pd, 'f1_score1')
+    trans_mean_std_save(f1_score2_pd, 'f1_score2')
+    trans_mean_std_save(ClassReport_pd, 'Classification_error')
     
-    params = dict(
-    n_row = 50000,
-    path = os.path.join( '..','data', 'smallBinaryPrice',symbol+'*'),
-    frac_train = 0.5, # fraction of dataset used for train. 1 - frac_train is used for test.
-    frac_test = 0.25,
-    increment =1000,
-    n_symbol = 1,
-    feature_reduction = 0, # No. features after PCA. Change this value to an int value to conduct PCA on feature set.
-    n_estimator = 100, # No. estimators for RandomForestClassifier
-    criterion = 'entropy'
-    )
-    #log = open('../../log/pca_rf', 'w')
-    #sys.stdout = log
-    process_machine_learning(symbol,10,params)
 
    
     #log.close()

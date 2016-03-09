@@ -9,13 +9,6 @@ class BasePortfolio(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def generate_positions(self):
-        """Provides the logic to determine how the portfolio
-        positions are allocated on the basis of forecasting
-        signals and available cash."""
-        raise NotImplementedError("Should implement generate_positions()!")
-
-    @abstractmethod
     def backtest_portfolio(self):
         """Provides the logic to generate the trading orders
         and subsequent equity curve (i.e. growth of total equity),

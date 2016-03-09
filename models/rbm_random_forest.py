@@ -35,6 +35,8 @@ from sklearn.neural_network import BernoulliRBM
 from sklearn.metrics import f1_score, classification_report
 from sklearn.ensemble import RandomForestClassifier
 import os
+import pandas as pd
+
 
 # log = open('../../log/rbm_rf', 'w')
 # sys.stdout = log
@@ -42,19 +44,18 @@ import os
 np.set_printoptions(edgeitems=30)
 
 params = dict(
-    path = os.path.join(os.path.expanduser('~'), 'data', 'smallHybrid', '*'),
-    n_row = 50000,
-    batchsize = 10,
-    learning_rate = 0.001,
-    n_iter = 50,
-    frac_train = 0.75,
-    n_symbol = 1,  # original value = 43
-    reduced_feature = 500,
-    n_estimator = 100,
-    criterion = 'entropy'
+n_row = 50000,
+batchsize = 10,
+learning_rate = 0.001,
+n_iter = 50,
+frac_train = 0.5,
+frac_test = 0.25,
+increment =1000,
+n_symbol = 1,  # original value = 43
+reduced_feature = 500,
+n_estimator = 100,
+criterion = 'entropy'
 )
-
-print(params)
 
 def load_data(file_path):
     files = []
@@ -88,9 +89,9 @@ def load_data(file_path):
     label = dfLabel.as_matrix()
     feature = dfFeature.as_matrix()
 
-    return label, feature, file_name
+    return label, feature
 
-def train_test_split(x, y):
+def train_test_split(x, y, i):
     '''
     split x and y into x_train, x_test, y_train, y_test
 
@@ -99,11 +100,15 @@ def train_test_split(x, y):
     :return: x_train, x_test, y_train, y_test
     '''
 
-    splitIndex=math.floor(params['frac_train']*params['n_row'])
-    y_test = y[splitIndex:]
-    y_train = y[:splitIndex]
-    x_test = x[splitIndex:]
-    x_train = x[:splitIndex]
+    startindex=params['increment']*i
+    splitIndex=params['increment']*i+math.floor(params['frac_train']*params['n_row'])
+    endindex = splitIndex+math.floor(params['frac_test']*params['n_row'])
+    print splitIndex
+    print endindex 
+    y_test = y[splitIndex:endindex]
+    y_train = y[startindex:splitIndex]
+    x_test = x[splitIndex:endindex]
+    x_train = x[startindex:splitIndex]
 
     print("DIMENSIONS")
     print("x_test", x_test.shape)
@@ -118,10 +123,21 @@ def print_f1_score(y_test, y_pred):
     y_test = y_test.ravel()
 
     #Total f1score
-    print("macro", f1_score(y_test, y_pred, average='macro'))
-    print("micro", f1_score(y_test, y_pred, average='micro'))
-    print("weighted", f1_score(y_test, y_pred, average='weighted'))
-    print(classification_report(y_test, y_pred))
+    macro_f1= f1_score(y_test, y_pred, average='macro')
+    micro_f1= f1_score(y_test, y_pred, average='micro')
+    weighted_f1=f1_score(y_test, y_pred, average='weighted')
+    print("macro", macro_f1)
+    print("micro", micro_f1)
+    print("weighted", weighted_f1)
+    score1 = pd.DataFrame({'macro':[macro_f1],'micro':[micro_f1],'weighted':[weighted_f1]})
+    
+    class_report = classification_report(y_test, y_pred)
+    print(class_report)
+    report_list=class_report.splitlines()
+    report_list[-1]=report_list[-1][:3]+report_list[-1][4]+report_list[-1][6:]
+    report_list=[row.split() for row in report_list]
+    score2 = pd.DataFrame({'-1':[float(report_list[2][3])],'0':[float(report_list[3][3])],'1':[float(report_list[4][3])],'avg/total':[float(report_list[6][3])]})
+    return score1, score2
 
 def classification_error(y_test, y_pred):
     y_test = y_test.ravel()
@@ -137,7 +153,8 @@ def classification_error(y_test, y_pred):
     print("Classification error")
     print("correct:", correct)
     print("total:", total)
-    print(correct / total)
+    print("correct/total",float(correct) / total)
+    return pd.DataFrame({"correct": [correct],"total": [total],'correct/total':[float(correct) / total]})
 
 
 def random_forest(x_train, x_test, y_train):
@@ -162,56 +179,15 @@ def random_forest(x_train, x_test, y_train):
 
     return y_pred
 
-
-def process_machine_learning():
-    i_label, i_feature, i_symbol = load_data(params['path'])
-    i_pos = i_symbol.rfind('/')+1
-    i_symbol = i_symbol[i_pos:i_pos+2]
-
-    #scales values in features so that they range from 0 to 1
-    i_minmaxScaler = MinMaxScaler()
-    i_feature = i_minmaxScaler.fit_transform(i_feature)
-
-    print("Dimensions")
-    print("label", i_label.shape)
-    print("feature", i_feature.shape)
-
-    #feature selection using RBM
-
-    i_start_time = time.time()
-
-    i_rbm = BernoulliRBM(n_components=params['reduced_feature'], learning_rate=params['learning_rate'],
-                         batch_size=params['batchsize'], n_iter=params['n_iter'])
-    i_feature = i_rbm.fit_transform(i_feature)
-
-    print("RBM--- %s seconds ---" % (time.time() - i_start_time))
-
-    print("Dimensions after RBM")
-    print("label", i_label.shape)
-    print("feature", i_feature.shape)
-
-    i_x_train, i_x_test, i_y_train, i_y_test = train_test_split(i_feature, i_label)
-    i_y_pred = random_forest(i_x_train, i_x_test, i_y_train)
-
-    i_filename = 'PRED_'+i_symbol+'-5.csv'
-    with open(i_filename, 'wb') as csvfile:
-        i_writer = csv.writer(csvfile, delimiter=',')
-        for i in range(len(i_y_pred)):
-            i_writer.writerow((i_y_pred[i], i_y_test[i][0]))
-
-    print_f1_score(i_y_test, i_y_pred)
-    classification_error(i_y_test, i_y_pred)
-
-
-if __name__ == '__main__':
-    label, feature, symbol = load_data(params['path'])
-    pos = symbol.rfind('/')+1
-    symbol = symbol[pos:pos+2]
+def process_machine_learning(symbol, i, path):
+    
+    params['path']= path
+    label, feature= load_data(params['path'])
 
     #scales values in features so that they range from 0 to 1
     minmaxScaler = MinMaxScaler()
     feature = minmaxScaler.fit_transform(feature)
-
+    
     print("Dimensions")
     print("label", label.shape)
     print("feature", feature.shape)
@@ -229,19 +205,22 @@ if __name__ == '__main__':
     print("label", label.shape)
     print("feature", feature.shape)
 
-    x_train, x_test, y_train, y_test = train_test_split(feature, label)
+    x_train, x_test, y_train, y_test = train_test_split(feature, label, i)
     y_pred = random_forest(x_train, x_test, y_train)
+    signal_pd=pd.DataFrame({'y_test':y_test[:,0],'y_pred':y_pred})
+    signal_pd.to_csv(os.path.join('..', 'data', 'rbm_random_forest',symbol,symbol+'_'+str(i)+'.csv'))
 
-    filename = 'PRED_'+symbol+'-5.csv'
-    with open(filename, 'wb') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',')
-        for i in range(len(y_pred)):
-            writer.writerow((y_pred[i], y_test[i][0]))
-
-    print_f1_score(y_test, y_pred)
-    classification_error(y_test, y_pred)
-
+        
     # log.close()
+    
+if __name__ == '__main__':
+    
+    symbol ='EO'
+    path = os.path.join( '..','data', 'smallBinaryPrice',symbol+'*')
+    for i in range (10):
+        process_machine_learning(symbol,i, path)
+       
+
 
 
 
