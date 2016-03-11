@@ -8,21 +8,7 @@ import sys
 import datetime as dt
 import math
 
-params = dict(
-n_row = 50000,
-batchsize = 10,
-learning_rate = 0.001,
-n_iter = 50,
-frac_train = 0.5,
-frac_test = 0.25,
-increment =1000,
-n_symbol = 1,  # original value = 43
-reduced_feature = 500,
-n_estimator = 100,
-criterion = 'entropy'
-)
-
-def read_price_from_csv(symbol, i,bottom=True):
+def read_price_from_csv(symbol, params, i,bottom=True):
     prices = []
     filename = os.path.join('data','csv', symbol +'*.csv')
     filenames = glob.glob(filename)
@@ -58,7 +44,7 @@ def convert_to_time(timestamp):
     return time
     
 def generate_data(symbol, iteration):
-    filename = os.path.join('data','rbm_random_forest', symbol, 'price_'+symbol+'_'+str(iteration)+'.csv')
+    filename = os.path.join('data','rbm_random_forest', 'Por',symbol, 'price_'+symbol+'_'+str(iteration)+'.csv')
     file = glob.glob(filename)
     if len(file) < 1:
         csvname = os.path.join( 'data','rbm_random_forest', symbol, symbol+'_'+str(iteration)+'.csv')
@@ -67,7 +53,7 @@ def generate_data(symbol, iteration):
             path = os.path.join('data', 'smallBinaryPrice',symbol+'*')
             rbm.process_machine_learning(symbol, iteration, path)
         signal_pd = read_data_from_file(csvname)
-        prices = read_price_from_csv(symbol, iteration)
+        prices = read_price_from_csv(symbol, params, iteration)
         signal_pd['price']=prices[1]
         signal_pd.index = [convert_to_time(d) for d in prices[0]]
         signal_pd.to_csv(filename)
@@ -76,9 +62,8 @@ def generate_data(symbol, iteration):
     
 
 if __name__ == '__main__':
-    #symbol = ['CL','GC','HG']
-    symbol = ['NG']
-    for s in symbol:
-        for i in range(10):
-            print generate_data(s, i)[:10]
+    filename = os.path.join('data','rbm_random_forest', 'Por',symbol, 'price_'+'*'+'.csv')
+    files = glob.glob(filename)
+    for f in files:
+        print f
 

@@ -58,7 +58,7 @@ def convert_to_time(timestamp):
     return time
     
 def generate_data(symbol, iteration):
-    filename = os.path.join('data','rbm_random_forest', symbol, 'price_'+symbol+'_'+str(iteration)+'.csv')
+    filename = os.path.join('data','rbm_random_forest',symbol, 'price_'+symbol+'_'+str(iteration)+'.csv')
     file = glob.glob(filename)
     if len(file) < 1:
         csvname = os.path.join( 'data','rbm_random_forest', symbol, symbol+'_'+str(iteration)+'.csv')
@@ -76,9 +76,16 @@ def generate_data(symbol, iteration):
     
 
 if __name__ == '__main__':
-    #symbol = ['CL','GC','HG']
-    symbol = ['NG']
-    for s in symbol:
+    folders = os.path.join('data','NotYetTest','*')
+    folders= glob.glob(folders)
+    for f_path in folders:
+        symbol=f_path[-2:]
         for i in range(10):
-            print generate_data(s, i)[:10]
+            if not os.path.exists(os.path.join('data','NotYetTest',symbol)):
+                os.makedirs(os.path.join('data','NotYetTest',symbol))
+            filename = os.path.join('data','NotYetTest',symbol, 'price_'+symbol+'_'+str(i)+'.csv')
+            file = glob.glob(filename)
+            signal_pd = read_data_from_file(filename)
+            signal_pd.columns = ['price', 'y_pred', 'y_test']
+            signal_pd.to_csv(os.path.join('data','NotYetTest',symbol, 'price_'+symbol+'_'+str(i)+'.csv'))
 

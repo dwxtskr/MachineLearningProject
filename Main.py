@@ -12,12 +12,15 @@ import numpy as np
 
 rolling_time =10
 
-def trans_mean_std_save(p,filename):
+def trans_mean_std(p, symbol):
     p=p.transpose()
     p.columns = ['Experiment '+str(i) for i in range(rolling_time)]
+    mulindex = pd.MultiIndex.from_product([[symbol],list(p.index)], names = ['Symbol', 'Type'])
+    p.index = mulindex 
     p['Mean']=p.mean(axis =1)
     p['Standard Deviation']=p.std(axis =1)
-    p.to_csv(os.path.join('data', 'rbm_random_forest',filename[:2],filename+'.csv'))
+    return p
+    #p.to_csv(os.path.join('data', 'rbm_random_forest',filename[:2],filename+'.csv'))
     
 def back_testing_portfolio(symbol, capital, initial_margin=5000,maint_margin=3500,contract_size = 1000, purchase_size = 1):
 
@@ -37,25 +40,29 @@ def back_testing_portfolio(symbol, capital, initial_margin=5000,maint_margin=350
         f1_score1, f1_score2 = rbm.print_f1_score(signal_test, signal_pred)
         class_report = rbm.classification_error(signal_test, signal_pred)
         
-        #generate position for predicted signal, no need for test signal
+
         strategy_pred = rs.SimpleStrategy(signal_pd['y_pred'])
+        strategy_test = rs.SimpleStrategy(signal_pd['y_test'])
+        
+        
         position_pred=strategy_pred.generate_position()
+        position_test=strategy_test.generate_position()
 
         # create MarketOpenPortfolio object
-        portfolio_test = rp.RBMRandomForestPortfolio(symbol, signal_pd['price'], signal_pd['y_test'], capital, initial_margin,maint_margin, contract_size , purchase_size)
+        portfolio_test = rp.RBMRandomForestPortfolio(symbol, signal_pd['price'], position_test, capital, initial_margin,maint_margin, contract_size , purchase_size)
         portfolio_pred = rp.RBMRandomForestPortfolio(symbol, signal_pd['price'], position_pred, capital, initial_margin,maint_margin, contract_size , purchase_size)
         
         test_port = portfolio_test.backtest_portfolio()
         pred_port = portfolio_pred.backtest_portfolio()
         
-        test_port.to_csv(os.path.join( 'data', 'rbm_random_forest','Test_Portfolio_'+symbol+'_'+str(i)+'.csv'))
-        pred_port.to_csv(os.path.join( 'data', 'rbm_random_forest','Pred_Portfolio_'+symbol+'_'+str(i)+'.csv'))
+        test_port.to_csv(os.path.join( 'data', 'rbm_random_forest',symbol,'Test_Portfolio_'+symbol+'_'+str(i)+'.csv'))
+        pred_port.to_csv(os.path.join( 'data', 'rbm_random_forest',symbol,'Pred_Portfolio_'+symbol+'_'+str(i)+'.csv'))
         
         sharpe_test = portfolio_test.calculate_sharpe_ratio()
         sharpe_pred = portfolio_pred.calculate_sharpe_ratio()
     
         sharpe_ratio = pd.DataFrame({symbol+" Pred Sharpe Ratio":[sharpe_pred],symbol+" Test Sharpe Ratio: ":[sharpe_test]})
-        annual_return = pd.DataFrame({symbol+" Pred Annualized Return":[portfolio_pred.total_return], symbol+" Test Sharpe Ratio: ":[portfolio_test.total_return]})
+        annual_return = pd.DataFrame({symbol+" Pred Annualized Return":[portfolio_pred.total_return], symbol+" Test Annualized Return: ":[portfolio_test.total_return]})
         
         f1_score1_pd=f1_score1_pd.append(f1_score1)
         f1_score2_pd=f1_score2_pd.append(f1_score2)
@@ -70,7 +77,7 @@ def back_testing_portfolio(symbol, capital, initial_margin=5000,maint_margin=350
         plt.xlabel("TIme")
         plt.legend()
         plt.title(symbol+'_'+str(i)+" Cumulative P&L")
-        plt.savefig(os.path.join( 'data', 'rbm_random_forest','Cum_P&L_'+symbol+'_'+str(i)+'.png'))
+        plt.savefig(os.path.join( 'data', 'rbm_random_forest',symbol,'Cum_P&L_'+symbol+'_'+str(i)+'.png'))
         plt.close()
         
         
@@ -80,27 +87,40 @@ def back_testing_portfolio(symbol, capital, initial_margin=5000,maint_margin=350
         plt.xlabel("TIme")
         plt.legend()
         plt.title(symbol+'_'+str(i)+" Prices")
-        plt.savefig(os.path.join( 'data', 'rbm_random_forest','Prices_'+symbol+'_'+str(i)+'.png'))
+        plt.savefig(os.path.join( 'data', 'rbm_random_forest',symbol,'Prices_'+symbol+'_'+str(i)+'.png'))
         plt.close()
         
-    trans_mean_std_save(f1_score1_pd,symbol+'_f1_score_report_1')
-    trans_mean_std_save(f1_score2_pd,symbol+'_f1_score_report_2')
-    trans_mean_std_save(ClassReport_pd,symbol+'_Classification_error')
-    trans_mean_std_save(SharpeRatio_pd, symbol+'_Sharpe_Ratio')
-    trans_mean_std_save(AnnualReturn_pd, symbol+'_Annulized_Return')
-    
+    s_f1_score1 = trans_mean_std(f1_score1_pd,symbol)
+    s_f1_score2 = trans_mean_std(f1_score2_pd,symbol)
+    s_classReport = trans_mean_std(ClassReport_pd,symbol)
+    s_sharpeRatio = trans_mean_std(SharpeRatio_pd, symbol)
+    s_return = trans_mean_std(AnnualReturn_pd, symbol)
+    return s_f1_score1,s_f1_score2,s_classReport,s_sharpeRatio,s_return
         # chart
         # calculate sharpe ratio
         # compare with real signals
 
 
 if __name__ == '__main__':
-
-    back_testing_portfolio('CL', 100000, 3850,3500,1000 )
-    #back_testing_portfolio('NG', 100000, 2090,1900,1000 )
-    #back_testing_portfolio('GC', 100000, 4675,4250,100 )
-    #back_testing_portfolio('PL', 100000, 2090,1900,50 )
-    #back_testing_portfolio('HG', 100000, 3135,2850,25000)
-    #back_testing_portfolio('ES', 100000, 5225,4750,50)
- 
+    capital = 100000
+    f1_score1 = pd.DataFrame()
+    f1_score2 = pd.DataFrame()
+    classReport = pd.DataFrame()
+    sharpeRatio = pd.DataFrame()
+    annual_return = pd.DataFrame()
+    
+    contract = ut.read_data_from_file(os.path.join( 'data','rbm_random_forest', 'contract.csv'))
+    for i in range(len(contract.index)):
+        f1_score1_i, f1_score2_i, classReport_i, sharpeRatio_i, annual_return_i=back_testing_portfolio(contract.index[i], capital, float(contract['initial margin'].iloc[i]),float(contract['maint margin'].iloc[i]),float(contract['contract size'].iloc[i]), purchase_size = 1)
+        f1_score1 = f1_score1.append(f1_score1_i)
+        f1_score2 = f1_score2.append(f1_score2_i)
+        classReport  = classReport.append(classReport_i)
+        sharpeRatio  = sharpeRatio.append(sharpeRatio_i)
+        annual_return  = annual_return.append(annual_return_i)
+    
+    f1_score1.to_csv(os.path.join( 'data','rbm_random_forest', 'f1_score_report_1.csv'))
+    f1_score2.to_csv(os.path.join( 'data','rbm_random_forest', 'f1_score_report_2.csv'))
+    classReport.to_csv(os.path.join( 'data','rbm_random_forest', 'Classification_error.csv'))
+    sharpeRatio.to_csv(os.path.join( 'data','rbm_random_forest', 'Sharpe_Ratio.csv'))
+    annual_return.to_csv(os.path.join( 'data','rbm_random_forest', 'Annulized_Return.csv'))
 
