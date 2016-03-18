@@ -2,7 +2,7 @@ from BaseStrategy import BaseStrategy
 import numpy as np
 import datetime
 
-class SimpleStrategy(BaseStrategy):
+class SimpleStrategy2(BaseStrategy):
     def __init__(self, signal):
         """
         Constructor of the class
@@ -18,19 +18,12 @@ class SimpleStrategy(BaseStrategy):
         Generate signal according strategy:
         :return: position
         """
-        curr_pos = 0
-        pre_pos = 0
-        position = np.zeros(self.length)
-        
-        for i  in range(self.length):
-            if self.signal[i]==self.signal[i]*(-1):
-                position[i]=self.signal[i]-curr_pos
-                curr_pos = self.signal[i]
-            else:
-                position[i]=self.signal[i]
-                curr_pos+=self.signal[i]
-            pre_pos = self.signal[i]
-        return position
+        position = np.zeros(len(self.signal))
+        for i in range(len(self.signal)):
+            if i!=0:
+                if self.signal[i]==0:
+                    self.signal[i]=self.signal[i-1]
+        return np.append(self.signal[0],np.diff(self.signal))
 
     #def get_time_stamp(self):
         #return self.__time__

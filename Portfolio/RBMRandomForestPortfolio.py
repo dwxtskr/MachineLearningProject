@@ -48,7 +48,7 @@ class RBMRandomForestPortfolio(BasePortfolio):
         # Create portfolio DataFrame
         account = np.ones(self.length)*self.initial_capital
         cash_added = np.zeros(self.length)
-        max_cash_added=self.initial_capital
+        max_cash_added=1000000000
         #realized_position = np.zeros(self.length)
         cum_pos = np.zeros(self.length)
         curr_margin = 0 

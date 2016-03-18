@@ -1,4 +1,4 @@
-import Strategy.SimpleStrategy as rs
+import Strategy.SimpleStrategy2 as rs
 import Portfolio.RBMRandomForestPortfolio as rp
 import Utils as ut
 import models.rbm_random_forest as rbm
@@ -41,8 +41,8 @@ def back_testing_portfolio(symbol, capital, initial_margin=5000,maint_margin=350
         class_report = rbm.classification_error(signal_test, signal_pred)
         
 
-        strategy_pred = rs.SimpleStrategy(signal_pd['y_pred'])
-        strategy_test = rs.SimpleStrategy(signal_pd['y_test'])
+        strategy_pred = rs.SimpleStrategy2(signal_pd['y_pred'])
+        strategy_test = rs.SimpleStrategy2(signal_pd['y_test'])
         
         
         position_pred=strategy_pred.generate_position()
@@ -77,8 +77,28 @@ def back_testing_portfolio(symbol, capital, initial_margin=5000,maint_margin=350
         plt.xlabel("TIme")
         plt.legend()
         plt.title(symbol+'_'+str(i)+" Cumulative P&L")
-        plt.savefig(os.path.join( 'data', 'rbm_random_forest',symbol,'Cum_P&L_'+symbol+'_'+str(i)+'.png'))
+        if not os.path.exists(os.path.join('data', 'rbm_random_forest',symbol,'Cumlative_P&L_Plot')):
+                os.makedirs(os.path.join('data', 'rbm_random_forest',symbol,'Cumlative_P&L_Plot'))
+        plt.savefig(os.path.join( 'data', 'rbm_random_forest',symbol,'Cumlative_P&L_Plot','Cum_P&L_'+symbol+'_'+str(i)+'.png'))
         plt.close()
+        
+        try:
+            pred_port['Cumulative P&L'].plot(label='Predict', loglog = True)
+            test_port['Cumulative P&L'].plot(label='Test', loglog = True)
+            plt.gcf().autofmt_xdate()
+            plt.ylabel("Value ($)")
+            plt.xlabel("TIme")
+            plt.legend()
+            plt.title(symbol+'_'+str(i)+" Log Cumulative P&L")
+            if not os.path.exists(os.path.join('data', 'rbm_random_forest',symbol,'Log_Cumlative_P&L_Plot')):
+                os.makedirs(os.path.join('data', 'rbm_random_forest',symbol,'Log_Cumlative_P&L_Plot'))
+            plt.savefig(os.path.join( 'data', 'rbm_random_forest',symbol,'Log_Cumlative_P&L_Plot','Log_Cum_P&L_'+symbol+'_'+str(i)+'.png'))
+            plt.close()
+        except ValueError:
+            print symbol+'_'+str(i) +" no positive value"
+            
+        
+        
         
         
         signal_pd['price'].plot()
@@ -111,6 +131,7 @@ if __name__ == '__main__':
     
     contract = ut.read_data_from_file(os.path.join( 'data','rbm_random_forest', 'contract.csv'))
     for i in range(len(contract.index)):
+        print contract.index[i]
         f1_score1_i, f1_score2_i, classReport_i, sharpeRatio_i, annual_return_i=back_testing_portfolio(contract.index[i], capital, float(contract['initial margin'].iloc[i]),float(contract['maint margin'].iloc[i]),float(contract['contract size'].iloc[i]), purchase_size = 1)
         f1_score1 = f1_score1.append(f1_score1_i)
         f1_score2 = f1_score2.append(f1_score2_i)
