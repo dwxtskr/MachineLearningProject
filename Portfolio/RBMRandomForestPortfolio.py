@@ -1,4 +1,5 @@
 from BasePortfolio import BasePortfolio
+import Strategy.StrategyFactory as sf
 import pandas as pd
 import math
 import numpy as np
@@ -6,7 +7,7 @@ import numpy as np
 
 class RBMRandomForestPortfolio(BasePortfolio):
 
-    def __init__(self, symbol, prices, position, initial_capital=100000.0, initial_margin=5000,maint_margin=3500, contract_size = 1000, purchase_size=1.):
+    def __init__(self, strategyName, symbol, prices, signal, initial_capital=100000.0, initial_margin=5000,maint_margin=3500, contract_size = 1000, purchase_size=1.):
         """
         Construct of the class
         :param symbol: symbol of the contract
@@ -23,7 +24,7 @@ class RBMRandomForestPortfolio(BasePortfolio):
         :param total_return: total annualized return over the period
         """
         self.symbol = symbol
-        self.length = position.size
+        self.length = signal.size
         self.initial_capital = float(initial_capital)
         self.initial_margin = float(initial_margin)
         self.maint_margin = float(maint_margin)
@@ -33,7 +34,8 @@ class RBMRandomForestPortfolio(BasePortfolio):
         
         self.portfolio['prices'] = prices
         self.portfolio['prices_change']=self.portfolio['prices'].diff().fillna(0)
-        self.portfolio['position']=position*self.purchasing_size
+        self.portfolio['position'] = sf.StrategyFactory().chooseStrategy(strategyName,signal).generate_position()*self.purchasing_size
+
         self.portfolio.index = pd.to_datetime(self.portfolio.index)
         
         #annualized

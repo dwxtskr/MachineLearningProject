@@ -1,4 +1,3 @@
-import Strategy.SimpleStrategy2 as rs
 import Portfolio.RBMRandomForestPortfolio as rp
 import Utils as ut
 import models.rbm_random_forest as rbm
@@ -22,7 +21,7 @@ def trans_mean_std(p, symbol):
     return p
     #p.to_csv(os.path.join('data', 'rbm_random_forest',filename[:2],filename+'.csv'))
     
-def back_testing_portfolio(symbol, capital, initial_margin=5000,maint_margin=3500,contract_size = 1000, purchase_size = 1):
+def back_testing_portfolio(strategyName, symbol, capital, initial_margin=5000,maint_margin=3500,contract_size = 1000, purchase_size = 1):
 
     f1_score1_pd=pd.DataFrame()
     f1_score2_pd=pd.DataFrame()
@@ -40,17 +39,9 @@ def back_testing_portfolio(symbol, capital, initial_margin=5000,maint_margin=350
         f1_score1, f1_score2 = rbm.print_f1_score(signal_test, signal_pred)
         class_report = rbm.classification_error(signal_test, signal_pred)
         
-
-        strategy_pred = rs.SimpleStrategy2(signal_pd['y_pred'])
-        strategy_test = rs.SimpleStrategy2(signal_pd['y_test'])
-        
-        
-        position_pred=strategy_pred.generate_position()
-        position_test=strategy_test.generate_position()
-
         # create MarketOpenPortfolio object
-        portfolio_test = rp.RBMRandomForestPortfolio(symbol, signal_pd['price'], position_test, capital, initial_margin,maint_margin, contract_size , purchase_size)
-        portfolio_pred = rp.RBMRandomForestPortfolio(symbol, signal_pd['price'], position_pred, capital, initial_margin,maint_margin, contract_size , purchase_size)
+        portfolio_test = rp.RBMRandomForestPortfolio(strategyName, symbol, signal_pd['price'], signal_pd['y_test'] , capital, initial_margin,maint_margin, contract_size , purchase_size)
+        portfolio_pred = rp.RBMRandomForestPortfolio(strategyName, symbol, signal_pd['price'], signal_pd['y_pred'], capital, initial_margin,maint_margin, contract_size , purchase_size)
         
         test_port = portfolio_test.backtest_portfolio()
         pred_port = portfolio_pred.backtest_portfolio()
@@ -132,7 +123,8 @@ if __name__ == '__main__':
     contract = ut.read_data_from_file(os.path.join( 'data','rbm_random_forest', 'contract.csv'))
     for i in range(len(contract.index)):
         print contract.index[i]
-        f1_score1_i, f1_score2_i, classReport_i, sharpeRatio_i, annual_return_i=back_testing_portfolio(contract.index[i], capital, float(contract['initial margin'].iloc[i]),float(contract['maint margin'].iloc[i]),float(contract['contract size'].iloc[i]), purchase_size = 1)
+        f1_score1_i, f1_score2_i, classReport_i, sharpeRatio_i, annual_return_i=\
+        back_testing_portfolio('Simple1',contract.index[i], capital, float(contract['initial margin'].iloc[i]),float(contract['maint margin'].iloc[i]),float(contract['contract size'].iloc[i]), purchase_size = 1)
         f1_score1 = f1_score1.append(f1_score1_i)
         f1_score2 = f1_score2.append(f1_score2_i)
         classReport  = classReport.append(classReport_i)
