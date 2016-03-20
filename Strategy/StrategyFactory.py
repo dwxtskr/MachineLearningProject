@@ -5,5 +5,5 @@ class StrategyFactory(object):
     def chooseStrategy(self, strategyName,signal):
         if strategyName =='Simple1':
             return ss1.SimpleStrategy(signal)
-        if strategyName =='Simple2':
+        else if strategyName =='Simple2':
             return ss2.SimpleStrategy2(signal)
