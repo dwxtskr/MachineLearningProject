@@ -34,7 +34,7 @@ class RBMRandomForestPortfolio(BasePortfolio):
         
         self.portfolio['prices'] = prices
         self.portfolio['prices_change']=self.portfolio['prices'].diff().fillna(0)
-        self.portfolio['position'] = sf.StrategyFactory().chooseStrategy(strategyName,signal).generate_position()*self.purchasing_size
+        self.portfolio['position'] = sf.StrategyFactory().chooseStrategy(strategyName,signal, prices).generate_position()*self.purchasing_size
 
         self.portfolio.index = pd.to_datetime(self.portfolio.index)
         

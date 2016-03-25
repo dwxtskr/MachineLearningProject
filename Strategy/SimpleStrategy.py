@@ -3,7 +3,7 @@ import numpy as np
 import datetime
 
 class SimpleStrategy(BaseStrategy):
-    def __init__(self, signal):
+    def __init__(self, signal,price):
         """
         Constructor of the class
         :param signal:
@@ -11,7 +11,7 @@ class SimpleStrategy(BaseStrategy):
         self.signal= np.array(signal)
         self.length = signal.size
         self.__time__ = signal.index
-
+        self.price = price
 
     def generate_position(self):
         """
