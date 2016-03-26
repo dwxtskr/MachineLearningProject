@@ -208,6 +208,8 @@ def process_machine_learning(symbol, i, path):
     x_train, x_test, y_train, y_test = train_test_split(feature, label, i)
     y_pred = random_forest(x_train, x_test, y_train)
     signal_pd=pd.DataFrame({'y_test':y_test[:,0],'y_pred':y_pred})
+    if not os.path.exists(os.path.join('..','data', 'rbm_random_forest',symbol)):
+                os.makedirs(os.path.join('..','data', 'rbm_random_forest',symbol))
     signal_pd.to_csv(os.path.join('..', 'data', 'rbm_random_forest',symbol,symbol+'_'+str(i)+'.csv'))
 
         
