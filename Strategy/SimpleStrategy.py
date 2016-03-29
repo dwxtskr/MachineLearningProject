@@ -19,17 +19,15 @@ class SimpleStrategy(BaseStrategy):
         :return: position
         """
         curr_pos = 0
-        pre_pos = 0
         position = np.zeros(self.length)
         
         for i  in range(self.length):
-            if self.signal[i]==self.signal[i]*(-1):
+            if self.signal[i]==np.sign(curr_pos)*(-1):
                 position[i]=self.signal[i]-curr_pos
                 curr_pos = self.signal[i]
             else:
                 position[i]=self.signal[i]
                 curr_pos+=self.signal[i]
-            pre_pos = self.signal[i]
         return position
 
     #def get_time_stamp(self):
