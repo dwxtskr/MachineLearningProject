@@ -35,7 +35,7 @@ class RBMRandomForestPortfolio(BasePortfolio):
         self.portfolio['prices'] = prices
         self.portfolio['prices_change']=self.portfolio['prices'].diff().fillna(0)
         self.portfolio['position'] = sf.StrategyFactory().chooseStrategy(strategyName,signal, prices).generate_position()*self.purchasing_size
-
+        self.portfolio['Cum_position'] = self.portfolio['position'].cumsum().shift(1).fillna(0)
         self.portfolio.index = pd.to_datetime(self.portfolio.index)
         
         #annualized
@@ -47,54 +47,16 @@ class RBMRandomForestPortfolio(BasePortfolio):
         backtesting portfolio with the generated positions
         :return:
         """
-        # Create portfolio DataFrame
-        account = np.ones(self.length)*self.initial_capital
-        cash_added = np.zeros(self.length)
-        max_cash_added=1000000000
-        #realized_position = np.zeros(self.length)
-        cum_pos = np.zeros(self.length)
-        curr_margin = 0 
-        adjusted =False
-        for i in range(self.length):
-            if i !=0:
-                account[i]=account[i-1]+cum_pos[i-1]*self.portfolio['prices_change'][i]*self.contract_size
-                # if current cumulative position is zero and no more money to pay the initial, close the portfolio
-                if ((cum_pos[i-1]==0) and (account[i]+max_cash_added<self.initial_margin)):
-                    account[i:]=account[i]
-                    break
-                # if account value less than margin requirement, add money
-                if account[i]+cash_added[i]<(curr_margin):
-                    if curr_margin-account[i]>max_cash_added:
-                        #if no more money to add, adjust position
-                          cum_pos[i]=np.sign(cum_pos[i-1])*int(max(0,(account[i]+max_cash_added))/self.maint_margin)
-                          adjusted =True
-                    else:
-                        cash_added[i:]+=curr_margin-(account[i]+cash_added[i])
-            #calculate margin need if net position increase
-            margin_needed = curr_margin+abs(self.portfolio['position'][i])*self.purchasing_size*self.initial_margin
-            total_account = account[i]+cash_added[i]
-            if ((self.portfolio['position'][i]!=0) and (np.sign(self.portfolio['position'][i])*np.sign(cum_pos[i-1])>=0)):
-                if total_account <margin_needed:
-                    # if no enough fund to long/short more, maintain the position 
-                    if margin_needed-account[i]>max_cash_added:
-                        cum_pos[i]=cum_pos[i] if adjusted else cum_pos[i-1]
-                        curr_margin=abs(cum_pos[i])*self.maint_margin
-                        adjusted = False
-                        continue
-                    cash_added[i:]+=margin_needed-total_account 
-            # recalculate  current margin
-            cum_pos[i]=cum_pos[i-1]+self.portfolio['position'][i]
-            curr_margin=abs(cum_pos[i])*self.maint_margin
-            
-        self.portfolio['portfolio']=account
-        self.portfolio['Added Cash']=cash_added
-        self.portfolio['Realized Cum_position']=cum_pos
-        self.portfolio['Realized position']=self.portfolio['Realized Cum_position'].diff().fillna(cum_pos[0])
-        self.portfolio['Total account value']=account+cash_added
-        self.portfolio['P&L'] = self.portfolio['portfolio'].diff().fillna(0)
+        self.portfolio['P&L'] = self.portfolio['prices'].diff().fillna(0).multiply(self.portfolio['Cum_position'])
         self.portfolio['Cumulative P&L'] = self.portfolio['P&L'] .cumsum()
+        self.portfolio['portfolio']=self.initial_capital+self.portfolio['Cumulative P&L']
+        self.portfolio['Margin_Account']=(np.sign(self.portfolio['Cum_position'].multiply(self.portfolio['position']))>=0).multiply( \
+                                                            np.abs(self.portfolio['position']))*self.initial_margin + self.portfolio['Cum_position']* self.maint_margin
+        self.portfolio['Added Cash'] = np.maximum(self.portfolio['Margin_Account']-self.portfolio['portfolio'],0)
+        self.portfolio['Total account value']=self.portfolio['portfolio'] + self.portfolio['Added Cash']
+        
         self.portfolio['returns'] = self.portfolio['P&L'].div(self.portfolio['Total account value'].shift().fillna(self.initial_capital))
-        self.total_return = (float(self.portfolio['Cumulative P&L'] .iloc[-1])/(self.initial_capital+cash_added[-1]))*math.sqrt(float(252*24*60)/(12500*5))
+        self.total_return = (float(self.portfolio['Cumulative P&L'] .iloc[-1])/(self.initial_capital+self.portfolio['Added Cash'][-1]))*math.sqrt(float(252*24*60)/(12500*5))
 
         return self.portfolio
         
