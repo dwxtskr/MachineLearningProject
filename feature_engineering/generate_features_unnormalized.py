@@ -202,11 +202,11 @@ for j in range(0, params['stock_count']):
     outputArray = outputDataFrame.as_matrix()
     outputArray=np.append(dimension,outputArray)
     outputArray.astype('float64')
-    outputArray.tofile(file+'_large.bin')
+    outputArray.tofile(file+'_large_unnorm.bin')
     smallOutputArray = smallDataFrame.as_matrix()
     smallOutputArray=np.append(smallDimension,smallOutputArray)
     smallOutputArray.astype('float64')
-    smallOutputArray.tofile(file+'_small.bin')
+    smallOutputArray.tofile(file+'_small_unnorm.bin')
 
     #for outputting to csv format
     # outputDataFrame.to_csv(file+'_largeHybrid.csv',index=False)
