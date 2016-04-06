@@ -35,7 +35,7 @@ import random
 pd.set_option('precision', 15)
 
 params = dict(
-    path = os.path.join(os.path.expanduser('~'), 'data', 'csv', '*'),
+    path = os.path.join(os.path.expanduser('~'), 'development', 'data', 'csv', '*'),
     min_lagging = 1,
     max_lagging = 100,
     #interval_lagging = 1, #not implemented
@@ -71,24 +71,24 @@ df_return = pd.DataFrame(dtype='float64')
 for file in input_files:
     df = pd.read_csv(file, names=['Timestamp', 'Price'], header=None, dtype='float64')
     df = df.ix[:min_n]
-    series_price = df.Price
+    price = df.Price
+
     series_return = pd.Series(index = df.index, name="Return"+file, dtype='float64')
 
     #generate return price
     for i in range(0, min_n - 1):
-        series_return[i] = (series_price[i+1]-series_price[i])/series_price[i]
+        series_return[i] = (price[i+1]-price[i])/price[i]
     series_return = series_return.dropna()
     df_return = pd.concat([df_return, series_return], axis=1)
 
-    # #generate normalized price
-    # meanPrice = np.mean(series_price)
-    # stdPrice = np.std(series_price)
+    series_price = pd.Series(index=df.index, name="Price"+file, dtype='float64')
 
-    # series_normalized = pd.Series(index=series_price.index, name="PriceNormalized"+file, dtype='float64')
+    for i in range(0, min_n):
+        series_price[i] = price[i]
 
-    # for i in range(0, min_n):
-    #     series_normalized[i] = (series_price[i]-meanPrice)/stdPrice
-    # df_normalized = pd.concat([df_normalized, series_normalized], axis=1)
+    series_price = series_price.dropna()
+
+    df_price = pd.concat([df_price, series_price], axis=1)
 
     print("len(series_price)",len(series_price))
     print("len(series_return)", len(series_return))

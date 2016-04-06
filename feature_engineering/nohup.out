@@ -1,0 +1,106 @@
+python: can't open file 'generate_features': [Errno 2] No such file or directory
+min_n: 244580
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244580
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+len(series_price) 244581
+len(series_return) 244579
+Traceback (most recent call last):
+  File "generate_features_unnormalized.py", line 99, in <module>
+    currPrice = df_price.ix[:,j]
+  File "/Users/jinbang-mac/anaconda/lib/python3.5/site-packages/pandas/core/indexing.py", line 68, in __getitem__
+    return self._getitem_tuple(key)
+  File "/Users/jinbang-mac/anaconda/lib/python3.5/site-packages/pandas/core/indexing.py", line 738, in _getitem_tuple
+    return self._getitem_lowerdim(tup)
+  File "/Users/jinbang-mac/anaconda/lib/python3.5/site-packages/pandas/core/indexing.py", line 863, in _getitem_lowerdim
+    section = self._getitem_axis(key, axis=i)
+  File "/Users/jinbang-mac/anaconda/lib/python3.5/site-packages/pandas/core/indexing.py", line 965, in _getitem_axis
+    return self._get_loc(key, axis=axis)
+  File "/Users/jinbang-mac/anaconda/lib/python3.5/site-packages/pandas/core/indexing.py", line 89, in _get_loc
+    return self.obj._ixs(key, axis=axis)
+  File "/Users/jinbang-mac/anaconda/lib/python3.5/site-packages/pandas/core/frame.py", line 1910, in _ixs
+    label = self.columns[i]
+  File "/Users/jinbang-mac/anaconda/lib/python3.5/site-packages/pandas/core/index.py", line 1149, in __getitem__
+    return getitem(key)
+IndexError: index 0 is out of bounds for axis 0 with size 0
